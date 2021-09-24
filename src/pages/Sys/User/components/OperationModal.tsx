@@ -25,29 +25,19 @@ const OperationModal: FC<OperationModalProps> = (props) => {
   if (!visible) {
     return null;
   }
-  let initialValues = {
-    checkVirusFlag: 'Y',
-  };
-  if (current) {
-    initialValues = {
-      ...initialValues,
-      ...current,
-      checkVirusFlag: current.checkVirusFlag === 'Y' ? 'Y' : 'N',
-    };
-  }
   return (
     <ModalForm<RoleItemProps>
       visible={visible}
-      title={done ? null : `角色${current ? '编辑' : '添加'}`}
+      title={done ? null : `人员${current ? '编辑' : '添加'}`}
       className={styles.standardListForm}
-      width={640}
+      width={540}
       onFinish={async (values) => {
         if (current) {
-          values.roleId = current.roleId;
+          values.id = current.id;
         }
         onSubmit(values);
       }}
-      initialValues={initialValues}
+      initialValues={current}
       submitter={{
         render: (_, dom) => (done ? null : dom),
         submitButtonProps: {
@@ -64,47 +54,37 @@ const OperationModal: FC<OperationModalProps> = (props) => {
       {!done ? (
         <>
           <ProFormText
-            name="roleName"
-            label="角色名称"
-            rules={[{ required: true, message: '请输入角色名称' }]}
-            placeholder="请输入"
-          />
-          <ProFormText
-            name="roleCode"
-            label="角色編碼"
-            rules={[{ required: true, message: '请输入角色編碼' }]}
-            placeholder="请输入"
-          />
-          <ProFormRadio.Group
-            name="checkVirusFlag"
-            label="是否掃描病毒"
-            radioType="button"
-            rules={[{ required: true, message: '请選擇是否掃描病毒' }]}
-            fieldProps={{
-              buttonStyle: 'solid',
-            }}
-            options={[
+            rules={[
               {
-                label: '掃描',
-                value: 'Y',
-              },
-              {
-                label: '不掃描',
-                value: 'N',
+                required: true,
+                message: '姓名为必填项',
               },
             ]}
+            label="姓名"
+            width="md"
+            name="name"
           />
-          <ProFormTextArea
-            name="description"
-            label="角色描述"
-            placeholder="请输入角色描述"
+          <ProFormText
+            name="phone"
+            label="联系方式"
+            width="md"
+            placeholder="请输入联系方式"
+            rules={[
+              {
+                required: true,
+                message: '联系方式为必填项',
+              },
+              {
+                pattern: /^1\d{10}$/,
+                message: '不合法的手机号格式!',
+              },
+            ]}
           />
         </>
       ) : (
         <Result
           status="success"
           title="操作成功"
-          subTitle="一系列的信息描述，很短同样也可以带标点。"
           extra={
             <Button type="primary" onClick={onDone}>
               知道了

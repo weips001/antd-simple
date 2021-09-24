@@ -2,9 +2,10 @@ import type { Settings as LayoutSettings } from '@ant-design/pro-layout';
 import { PageLoading } from '@ant-design/pro-layout';
 import type { RunTimeLayoutConfig, RequestConfig } from 'umi';
 import { history, Link } from 'umi';
+import { RequestOptionsInit } from 'umi-request';
 import RightContent from '@/components/RightContent';
 import Footer from '@/components/Footer';
-import { currentUser as queryCurrentUser } from './services/ant-design-pro/api';
+import { currentUser as queryCurrentUser } from './pages/user/Login/service';
 import { BookOutlined, LinkOutlined } from '@ant-design/icons';
 
 const isDev = process.env.NODE_ENV === 'development';
@@ -82,17 +83,33 @@ export const layout: RunTimeLayoutConfig = ({ initialState }) => {
   };
 };
 
+function beforeRequest(url: string, options: RequestOptionsInit) {
+  const token = localStorage.getItem('token');
+  const placeId = localStorage.getItem('placeId');
+  if (token) {
+    options.headers = {
+      ...options.headers,
+      token,
+      authorization: `Bearer ${token}`,
+    };
+  }
+  if (placeId) {
+    options.headers['Place-Id'] = placeId;
+  }
+
+  return { options };
+}
+
 export const request: RequestConfig = {
   errorConfig: {
     adaptor: (resData) => {
-      console.log('請求攔截--', resData);
       return {
         ...resData,
-        success:
-          resData.code === 'Y' || resData.status === 'ok' || resData.success,
+        success: resData.code === 0,
         errorMessage: resData.msg,
         // showType: 0,
       };
     },
   },
+  requestInterceptors: [beforeRequest],
 };

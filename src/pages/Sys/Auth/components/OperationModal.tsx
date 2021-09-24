@@ -1,11 +1,13 @@
 import type { FC } from 'react';
 import {
   ModalForm,
+  ProFormSelect,
+  ProFormDateTimePicker,
   ProFormText,
   ProFormRadio,
   ProFormTextArea,
 } from '@ant-design/pro-form';
-import type { FileTypeProps } from '../data.d';
+import type { AuthItemProps } from '../data.d';
 import styles from '../style.less';
 import { Button, Result } from 'antd';
 
@@ -13,9 +15,9 @@ type OperationModalProps = {
   done: boolean;
   visible: boolean;
   loading?: boolean;
-  current: Partial<FileTypeProps> | undefined;
+  current: Partial<AuthItemProps> | undefined;
   onDone: () => void;
-  onSubmit: (values: FileTypeProps) => void;
+  onSubmit: (values: AuthItemProps) => void;
 };
 
 const OperationModal: FC<OperationModalProps> = (props) => {
@@ -23,13 +25,12 @@ const OperationModal: FC<OperationModalProps> = (props) => {
   if (!visible) {
     return null;
   }
-
   return (
-    <ModalForm<FileTypeProps>
+    <ModalForm<AuthItemProps>
       visible={visible}
-      title={done ? null : `文件類型 ${current ? '编辑' : '添加'}`}
+      title={done ? null : `权限${current ? '编辑' : '添加'}`}
       className={styles.standardListForm}
-      width={640}
+      width={540}
       onFinish={async (values) => {
         if (current) {
           values.id = current.id;
@@ -53,35 +54,54 @@ const OperationModal: FC<OperationModalProps> = (props) => {
       {!done ? (
         <>
           <ProFormText
-            name="fileSuffix"
-            label="文件後綴"
-            rules={[{ required: true, message: '请输入文件後綴' }]}
-            placeholder="请输入"
+            rules={[
+              {
+                required: true,
+                message: '权限名称为必填项',
+              },
+            ]}
+            label="权限名称"
+            width="md"
+            name="authName"
           />
           <ProFormText
-            name="fileTypeCode"
-            label="文件類型編碼"
-            rules={[{ required: true, message: '请输入文件類型編碼' }]}
-            placeholder="请输入"
+            rules={[
+              {
+                required: true,
+                message: '权限编码为必填项',
+              },
+            ]}
+            label="权限编码"
+            width="md"
+            name="authCode"
           />
-          <ProFormText
-            name="fileType"
-            label="MIME類型"
-            rules={[{ required: true, message: '请输入MIME類型' }]}
-            placeholder="请输入"
+          <ProFormSelect
+            name="authFlag"
+            width="md"
+            label="分配范围"
+            valueEnum={{
+              '-1': '所有用户',
+              '-2': '仅超级管理员',
+            }}
+            placeholder="请选择分配范围"
+            rules={[{ required: true, message: '请选择分配范围!' }]}
           />
-
           <ProFormTextArea
-            name="description"
-            label="文件類型描述"
-            placeholder="请输入文件類型描述"
+            name="desc"
+            label="权限描述"
+            rules={[
+              {
+                required: true,
+                message: '权限描述为必填项',
+              },
+            ]}
+            placeholder="请输入权限描述"
           />
         </>
       ) : (
         <Result
           status="success"
           title="操作成功"
-          subTitle="一系列的信息描述，很短同样也可以带标点。"
           extra={
             <Button type="primary" onClick={onDone}>
               知道了

@@ -1,22 +1,35 @@
 import { PlusOutlined } from '@ant-design/icons';
-import { Button, message, Modal, Drawer } from 'antd';
-import React, { useState, useRef, useEffect } from 'react';
+import { Button, message, Modal, Drawer, Tag } from 'antd';
+import React, { useState, useRef } from 'react';
 import { useRequest } from 'umi';
-import { PageContainer, FooterToolbar } from '@ant-design/pro-layout';
+import { PageContainer } from '@ant-design/pro-layout';
 import type { ProColumns, ActionType } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
-import { ModalForm, ProFormText, ProFormTextArea } from '@ant-design/pro-form';
 import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import OperationModal from './components/OperationModal';
-import type { RoleItemProps } from './data';
+import BindModal from './components/BindModal';
+import type { RoleItemProps, BindRoleProps } from './data';
 import {
-  rule,
-  addRule,
-  updateRule,
-  removeRule,
-} from '@/services/ant-design-pro/api';
-import { addItem, queryList, removeItem, updateItem } from './service';
+  addItem,
+  queryList,
+  removeItem,
+  updateItem,
+  getAllScanRole,
+  queryClientSystemRole,
+  assignClientSystemRole,
+} from './service';
+
+const userStatusList = {
+  0: {
+    text: <Tag color="success">在职</Tag>,
+    status: 'Success',
+  },
+  1: {
+    text: <Tag color="error">离职</Tag>,
+    status: 'Error',
+  },
+};
 
 const TableList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
@@ -24,10 +37,29 @@ const TableList: React.FC = () => {
   const [currentRow, setCurrentRow] = useState<RoleItemProps>();
   const [done, setDone] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
+  const [bindDone, setBindDone] = useState<boolean>(false);
+  const [bindVisible, setBindVisible] = useState<boolean>(false);
+  const [roleId, setRoleId] = useState<string[]>([]);
   /**
    * @en-US International configuration
    * @zh-CN 国际化配置
    * */
+  const { loading: bindLoading, run: bindSysRole } = useRequest(
+    assignClientSystemRole,
+    {
+      manual: true,
+    },
+  );
+  const { loading: detailLoading, run: getCurrentRole } = useRequest(
+    queryClientSystemRole,
+    {
+      manual: true,
+      onSuccess(roleIds) {
+        setRoleId(roleIds);
+      },
+    },
+  );
+  const { data: allRoleList } = useRequest(getAllScanRole);
 
   const handleDone = () => {
     setDone(false);
@@ -35,20 +67,29 @@ const TableList: React.FC = () => {
     setCurrentRow(undefined);
   };
 
+  const handleBindDone = () => {
+    setBindDone(false);
+    setBindVisible(false);
+    setCurrentRow(undefined);
+  };
+
   const deleteAction = (roleId: string) => {
     Modal.confirm({
-      title: '删除任务',
-      content: '确定删除该任务吗？',
+      title: '删除角色',
+      content: '确定删除该角色吗？',
       okText: '确认',
       cancelText: '取消',
-      onOk: () => postRun('remove', roleId),
+      onOk: async () => {
+        await postRun('remove', roleId);
+        message.success('刪除成功');
+      },
     });
   };
 
   const columns: ProColumns<RoleItemProps>[] = [
     {
-      title: '角色名称',
-      dataIndex: 'roleName',
+      title: '姓名',
+      dataIndex: 'name',
       hideInSearch: true,
       render: (dom, entity) => {
         return (
@@ -64,36 +105,22 @@ const TableList: React.FC = () => {
       },
     },
     {
-      title: '角色編碼',
-      dataIndex: 'roleCode',
+      title: '联系方式',
+      hideInForm: true,
+      dataIndex: 'phone',
     },
     {
-      title: '是否掃描',
-      dataIndex: 'checkVirusFlag',
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      hideInForm: true,
+      sorter: true,
       hideInSearch: true,
-      valueType: 'select',
-      valueEnum: {
-        Y: {
-          text: '掃描',
-          status: 'Success',
-        },
-        N: {
-          text: '不掃描',
-          status: 'Error',
-        },
-      },
-    },
-    {
-      title: '角色描述',
-      dataIndex: 'description',
-      valueType: 'textarea',
-      hideInSearch: true,
-    },
-    {
-      title: '創建時間',
-      dataIndex: 'createTime',
       valueType: 'dateTime',
-      hideInSearch: true,
+    },
+    {
+      title: '人员状态',
+      dataIndex: 'status',
+      valueEnum: userStatusList,
     },
     {
       title: '操作',
@@ -110,12 +137,22 @@ const TableList: React.FC = () => {
           編輯
         </a>,
         <a
-          key="subscribeAlert"
-          className="text-danger"
-          onClick={() => deleteAction(record.roleId as string)}
+          key="bind"
+          onClick={() => {
+            setBindVisible(true);
+            setCurrentRow(record);
+            getCurrentRole(record.id);
+          }}
         >
-          刪除
+          權限綁定
         </a>,
+        // <a
+        //   key="subscribeAlert"
+        //   className="text-danger"
+        //   onClick={() => deleteAction(record.id as string)}
+        // >
+        //   刪除
+        // </a>,
       ],
     },
   ];
@@ -132,8 +169,8 @@ const TableList: React.FC = () => {
     },
     {
       manual: true,
-      onSuccess: (result) => {
-        console.log('result', result);
+      onSuccess: (...arg) => {
+        console.log('result', arg);
         actionRef.current?.reload();
       },
     },
@@ -141,12 +178,19 @@ const TableList: React.FC = () => {
   const { run: postRun, loading } = res;
   const handleSubmit = async (values: RoleItemProps) => {
     try {
-      const method = values?.roleId ? 'update' : 'add';
-      const res = await postRun(method, values);
-      console.log('re', res);
+      const method = values?.id ? 'update' : 'add';
+      await postRun(method, values);
       setDone(true);
     } catch (e) {
       console.log('e', e);
+    }
+  };
+  const handleBindSubmit = async (values: BindRoleProps) => {
+    try {
+      await bindSysRole(values);
+      setBindDone(true);
+    } catch (e) {
+      console.log('handleBindSubmit', e);
     }
   };
   return (
@@ -154,7 +198,7 @@ const TableList: React.FC = () => {
       <ProTable<RoleItemProps, API.PageParams>
         headerTitle={'查询表格'}
         actionRef={actionRef}
-        rowKey="roleId"
+        rowKey="id"
         search={{
           labelWidth: 120,
         }}
@@ -180,7 +224,17 @@ const TableList: React.FC = () => {
         loading={loading}
         onSubmit={handleSubmit}
       />
-
+      <BindModal
+        done={bindDone}
+        visible={bindVisible}
+        current={currentRow}
+        onDone={handleBindDone}
+        allRoleList={allRoleList}
+        loading={bindLoading}
+        detailLoading={detailLoading}
+        role={roleId}
+        onSubmit={handleBindSubmit}
+      />
       <Drawer
         width={600}
         visible={showDetail}
@@ -190,7 +244,7 @@ const TableList: React.FC = () => {
         }}
         closable={false}
       >
-        {currentRow?.roleId && (
+        {currentRow?.id && (
           <ProDescriptions<RoleItemProps>
             column={2}
             title={currentRow?.roleName}

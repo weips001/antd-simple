@@ -1,26 +1,22 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, message, Modal, Drawer } from 'antd';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRequest } from 'umi';
-import { PageContainer, FooterToolbar } from '@ant-design/pro-layout';
+import { PageContainer } from '@ant-design/pro-layout';
 import type { ProColumns, ActionType } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
 import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import OperationModal from './components/OperationModal';
-import type { SysItemProps } from './data';
+import type { AuthItemProps, BindRoleProps } from './data';
 import { addItem, queryList, removeItem, updateItem } from './service';
 
 const TableList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
-  const [currentRow, setCurrentRow] = useState<SysItemProps>();
+  const [currentRow, setCurrentRow] = useState<AuthItemProps>();
   const [done, setDone] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
-  /**
-   * @en-US International configuration
-   * @zh-CN 国际化配置
-   * */
 
   const handleDone = () => {
     setDone(false);
@@ -28,20 +24,23 @@ const TableList: React.FC = () => {
     setCurrentRow(undefined);
   };
 
-  const deleteAction = (systemId: string) => {
+  const deleteAction = (roleId: string) => {
     Modal.confirm({
-      title: '删除任务',
-      content: '确定删除该任务吗？',
+      title: '删除权限',
+      content: '确定删除该权限吗？',
       okText: '确认',
       cancelText: '取消',
-      onOk: () => postRun('remove', systemId),
+      onOk: async () => {
+        await postRun('remove', roleId);
+        message.success('刪除成功');
+      },
     });
   };
 
-  const columns: ProColumns<SysItemProps>[] = [
+  const columns: ProColumns<AuthItemProps>[] = [
     {
-      title: '系統名称',
-      dataIndex: 'systemName',
+      title: '权限名称',
+      dataIndex: 'authName',
       hideInSearch: true,
       render: (dom, entity) => {
         return (
@@ -57,24 +56,21 @@ const TableList: React.FC = () => {
       },
     },
     {
-      title: '系統編碼',
-      dataIndex: 'systemCode',
+      title: '权限编码',
+      dataIndex: 'authCode',
     },
     {
-      title: '系統負責人',
-      dataIndex: 'principal',
+      title: '角色描述',
+      hideInForm: true,
+      dataIndex: 'desc',
     },
     {
-      title: '系統描述',
-      dataIndex: 'description',
-      valueType: 'textarea',
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      hideInForm: true,
+      sorter: true,
       hideInSearch: true,
-    },
-    {
-      title: '創建時間',
-      dataIndex: 'createTime',
       valueType: 'dateTime',
-      hideInSearch: true,
     },
     {
       title: '操作',
@@ -113,26 +109,26 @@ const TableList: React.FC = () => {
     },
     {
       manual: true,
-      onSuccess: (result) => {
-        console.log('result', result);
+      onSuccess: (...arg) => {
+        console.log('result', arg);
         actionRef.current?.reload();
       },
     },
   );
   const { run: postRun, loading } = res;
-  const handleSubmit = async (values: SysItemProps) => {
+  const handleSubmit = async (values: AuthItemProps) => {
     try {
       const method = values?.id ? 'update' : 'add';
-      const res = await postRun(method, values);
-      console.log('re', res);
+      await postRun(method, values);
       setDone(true);
     } catch (e) {
       console.log('e', e);
     }
   };
+
   return (
     <PageContainer>
-      <ProTable<SysItemProps, API.PageParams>
+      <ProTable<AuthItemProps, API.PageParams>
         headerTitle={'查询表格'}
         actionRef={actionRef}
         rowKey="id"
@@ -172,13 +168,13 @@ const TableList: React.FC = () => {
         closable={false}
       >
         {currentRow?.id && (
-          <ProDescriptions<SysItemProps>
+          <ProDescriptions<AuthItemProps>
             column={2}
-            title={currentRow?.systemName}
+            title={currentRow?.authName}
             request={async () => ({
               data: currentRow || {},
             })}
-            columns={columns as ProDescriptionsItemProps<SysItemProps>[]}
+            columns={columns as ProDescriptionsItemProps<AuthItemProps>[]}
           />
         )}
       </Drawer>

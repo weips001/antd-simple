@@ -1,11 +1,13 @@
 import type { FC } from 'react';
 import {
   ModalForm,
+  ProFormSelect,
+  ProFormDateTimePicker,
   ProFormText,
   ProFormRadio,
   ProFormTextArea,
 } from '@ant-design/pro-form';
-import type { SysUserProps } from '../data.d';
+import type { RoleItemProps } from '../data.d';
 import styles from '../style.less';
 import { Button, Result } from 'antd';
 
@@ -13,9 +15,9 @@ type OperationModalProps = {
   done: boolean;
   visible: boolean;
   loading?: boolean;
-  current: Partial<SysUserProps> | undefined;
+  current: Partial<RoleItemProps> | undefined;
   onDone: () => void;
-  onSubmit: (values: SysUserProps) => void;
+  onSubmit: (values: RoleItemProps) => void;
 };
 
 const OperationModal: FC<OperationModalProps> = (props) => {
@@ -23,13 +25,12 @@ const OperationModal: FC<OperationModalProps> = (props) => {
   if (!visible) {
     return null;
   }
-
   return (
-    <ModalForm<SysUserProps>
+    <ModalForm<RoleItemProps>
       visible={visible}
-      title={done ? null : `系統人員 ${current ? '编辑' : '添加'}`}
+      title={done ? null : `角色${current ? '编辑' : '添加'}`}
       className={styles.standardListForm}
-      width={640}
+      width={540}
       onFinish={async (values) => {
         if (current) {
           values.id = current.id;
@@ -53,41 +54,33 @@ const OperationModal: FC<OperationModalProps> = (props) => {
       {!done ? (
         <>
           <ProFormText
-            name="account"
-            label="人員工號"
-            rules={[{ required: true, message: '请输入人員工號' }]}
+            name="roleName"
+            label="角色名称"
+            rules={[{ required: true, message: '请输入角色名称' }]}
             placeholder="请输入"
           />
           <ProFormText
-            name="name"
-            label="姓名"
-            rules={[{ required: true, message: '请输入姓名' }]}
+            name="roleCode"
+            label="角色編碼"
+            rules={[{ required: true, message: '请输入角色編碼' }]}
             placeholder="请输入"
           />
-          <ProFormText
-            name="email"
-            label="郵箱"
-            rules={[{ required: true, message: '请输入郵箱' }]}
-            placeholder="请输入"
-          />
-          <ProFormText
-            name="level"
-            label="資位"
-            rules={[{ required: true, message: '请输入MIME類型' }]}
-            placeholder="请输入"
-          />
-          <ProFormText
-            name="headShip"
-            label="職位"
-            rules={[{ required: true, message: '请输入職位' }]}
-            placeholder="请输入"
+
+          <ProFormTextArea
+            name="desc"
+            rules={[
+              {
+                required: true,
+                message: '角色描述为必填项',
+              },
+            ]}
+            label="角色描述"
           />
         </>
       ) : (
         <Result
           status="success"
           title="操作成功"
-          subTitle="一系列的信息描述，很短同样也可以带标点。"
           extra={
             <Button type="primary" onClick={onDone}>
               知道了

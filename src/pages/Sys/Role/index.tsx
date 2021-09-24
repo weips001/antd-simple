@@ -1,26 +1,54 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { Button, message, Modal, Drawer } from 'antd';
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useRequest } from 'umi';
-import { PageContainer, FooterToolbar } from '@ant-design/pro-layout';
+import { PageContainer } from '@ant-design/pro-layout';
 import type { ProColumns, ActionType } from '@ant-design/pro-table';
 import ProTable from '@ant-design/pro-table';
 import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import OperationModal from './components/OperationModal';
-import type { SysUserProps } from './data';
-import { addItem, queryList, removeItem, updateItem } from './service';
+import BindModal from './components/BindModal';
+import type { RoleItemProps, BindRoleProps } from './data';
+import {
+  addItem,
+  queryList,
+  removeItem,
+  updateItem,
+  getAllScanRole,
+  queryClientSystemRole,
+  assignClientSystemRole,
+} from './service';
 
 const TableList: React.FC = () => {
   const [showDetail, setShowDetail] = useState<boolean>(false);
   const actionRef = useRef<ActionType>();
-  const [currentRow, setCurrentRow] = useState<SysUserProps>();
+  const [currentRow, setCurrentRow] = useState<RoleItemProps>();
   const [done, setDone] = useState<boolean>(false);
   const [visible, setVisible] = useState<boolean>(false);
+  const [bindDone, setBindDone] = useState<boolean>(false);
+  const [bindVisible, setBindVisible] = useState<boolean>(false);
+  const [roleId, setRoleId] = useState<string[]>([]);
   /**
    * @en-US International configuration
    * @zh-CN 国际化配置
    * */
+  const { loading: bindLoading, run: bindSysRole } = useRequest(
+    assignClientSystemRole,
+    {
+      manual: true,
+    },
+  );
+  const { loading: detailLoading, run: getCurrentRole } = useRequest(
+    queryClientSystemRole,
+    {
+      manual: true,
+      onSuccess(roleIds) {
+        setRoleId(roleIds);
+      },
+    },
+  );
+  const { data: allRoleList } = useRequest(getAllScanRole);
 
   const handleDone = () => {
     setDone(false);
@@ -28,20 +56,30 @@ const TableList: React.FC = () => {
     setCurrentRow(undefined);
   };
 
-  const deleteAction = (systemId: string) => {
+  const handleBindDone = () => {
+    setBindDone(false);
+    setBindVisible(false);
+    setCurrentRow(undefined);
+  };
+
+  const deleteAction = (roleId: string) => {
     Modal.confirm({
-      title: '删除任务',
-      content: '确定删除该任务吗？',
+      title: '删除角色',
+      content: '确定删除该角色吗？',
       okText: '确认',
       cancelText: '取消',
-      onOk: () => postRun('remove', systemId),
+      onOk: async () => {
+        await postRun('remove', roleId);
+        message.success('刪除成功');
+      },
     });
   };
 
-  const columns: ProColumns<SysUserProps>[] = [
+  const columns: ProColumns<RoleItemProps>[] = [
     {
-      title: '人員工號',
-      dataIndex: 'account',
+      title: '角色名称',
+      dataIndex: 'roleName',
+      hideInSearch: true,
       render: (dom, entity) => {
         return (
           <a
@@ -56,29 +94,21 @@ const TableList: React.FC = () => {
       },
     },
     {
-      title: '姓名',
-      dataIndex: 'name',
+      title: '角色編碼',
+      dataIndex: 'roleCode',
     },
     {
-      title: '郵箱',
-      dataIndex: 'email',
+      title: '角色描述',
+      hideInForm: true,
+      dataIndex: 'desc',
+    },
+    {
+      title: '创建时间',
+      dataIndex: 'createdAt',
+      hideInForm: true,
+      sorter: true,
       hideInSearch: true,
-    },
-    {
-      title: '資位',
-      dataIndex: 'level',
-      hideInSearch: true,
-    },
-    {
-      title: '職位',
-      dataIndex: 'headShip',
-      hideInSearch: true,
-    },
-    {
-      title: '創建時間',
-      dataIndex: 'createTime',
       valueType: 'dateTime',
-      hideInSearch: true,
     },
     {
       title: '操作',
@@ -93,6 +123,16 @@ const TableList: React.FC = () => {
           }}
         >
           編輯
+        </a>,
+        <a
+          key="bind"
+          onClick={() => {
+            setBindVisible(true);
+            setCurrentRow(record);
+            getCurrentRole(record.id);
+          }}
+        >
+          權限綁定
         </a>,
         <a
           key="subscribeAlert"
@@ -117,26 +157,33 @@ const TableList: React.FC = () => {
     },
     {
       manual: true,
-      onSuccess: (result) => {
-        console.log('result', result);
+      onSuccess: (...arg) => {
+        console.log('result', arg);
         actionRef.current?.reload();
       },
     },
   );
   const { run: postRun, loading } = res;
-  const handleSubmit = async (values: SysUserProps) => {
+  const handleSubmit = async (values: RoleItemProps) => {
     try {
       const method = values?.id ? 'update' : 'add';
-      const res = await postRun(method, values);
-      console.log('re', res);
+      await postRun(method, values);
       setDone(true);
     } catch (e) {
       console.log('e', e);
     }
   };
+  const handleBindSubmit = async (values: BindRoleProps) => {
+    try {
+      await bindSysRole(values);
+      setBindDone(true);
+    } catch (e) {
+      console.log('handleBindSubmit', e);
+    }
+  };
   return (
     <PageContainer>
-      <ProTable<SysUserProps, API.PageParams>
+      <ProTable<RoleItemProps, API.PageParams>
         headerTitle={'查询表格'}
         actionRef={actionRef}
         rowKey="id"
@@ -165,7 +212,17 @@ const TableList: React.FC = () => {
         loading={loading}
         onSubmit={handleSubmit}
       />
-
+      <BindModal
+        done={bindDone}
+        visible={bindVisible}
+        current={currentRow}
+        onDone={handleBindDone}
+        allRoleList={allRoleList}
+        loading={bindLoading}
+        detailLoading={detailLoading}
+        auth={roleId}
+        onSubmit={handleBindSubmit}
+      />
       <Drawer
         width={600}
         visible={showDetail}
@@ -176,13 +233,13 @@ const TableList: React.FC = () => {
         closable={false}
       >
         {currentRow?.id && (
-          <ProDescriptions<SysUserProps>
+          <ProDescriptions<RoleItemProps>
             column={2}
-            title={currentRow?.account}
+            title={currentRow?.roleName}
             request={async () => ({
               data: currentRow || {},
             })}
-            columns={columns as ProDescriptionsItemProps<SysUserProps>[]}
+            columns={columns as ProDescriptionsItemProps<RoleItemProps>[]}
           />
         )}
       </Drawer>
