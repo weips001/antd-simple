@@ -9,7 +9,7 @@ import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import OperationModal from './components/OperationModal';
 import BindModal from './components/BindModal';
-import type { RoleItemProps, BindRoleProps } from './data';
+import type { RoleItemProps, BindRoleProps, PageParams } from './data';
 import {
   addItem,
   queryList,
@@ -183,7 +183,7 @@ const TableList: React.FC = () => {
   };
   return (
     <PageContainer>
-      <ProTable<RoleItemProps, API.PageParams>
+      <ProTable<RoleItemProps, PageParams>
         headerTitle={'查询表格'}
         actionRef={actionRef}
         rowKey="id"

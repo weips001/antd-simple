@@ -1,5 +1,5 @@
 import { request } from 'umi';
-import type { RoleItemProps } from './data.d';
+import type { RoleItemProps, BindRoleProps, SelectProps } from './data.d';
 
 type ParamsType = {
   current?: number;
@@ -40,7 +40,7 @@ export async function updateItem(
   });
 }
 
-export async function getAllScanRole(): Promise<{
+export async function getAllRole(): Promise<{
   data: SelectProps[];
 }> {
   return request('/api/getAllRole', {
@@ -48,18 +48,16 @@ export async function getAllScanRole(): Promise<{
   });
 }
 
-export async function assignClientSystemRole(
-  data: BindRoleProps,
-): Promise<{ data: { list: SysItemProps[] } }> {
+export async function bindRole(data: BindRoleProps): Promise<{ data: null }> {
   return request('/api/bindRole', {
     method: 'POST',
     data,
   });
 }
 
-export async function queryClientSystemRole(
+export async function getRoleIdsByUser(
   userId?: string,
-): Promise<{ data: BindRoleProps }> {
+): Promise<{ data: string[] }> {
   return request('/api/getRoleIdsByUser', {
     method: 'POST',
     data: {

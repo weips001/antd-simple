@@ -1,5 +1,5 @@
 export type RoleItemProps = {
-  id: string;
+  id?: string;
   desc: string;
   name: string;
   password: string;
@@ -17,10 +17,10 @@ export type SelectProps = {
 };
 
 export type BindRoleProps = {
-  auth: string[];
-  roleId?: string;
+  role: string[];
+  userId?: string;
 };
 
 export type BindRoleModalProps = {
-  auth: string[];
+  role: string[];
 };

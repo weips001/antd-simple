@@ -8,7 +8,7 @@ import ProTable from '@ant-design/pro-table';
 import type { ProDescriptionsItemProps } from '@ant-design/pro-descriptions';
 import ProDescriptions from '@ant-design/pro-descriptions';
 import OperationModal from './components/OperationModal';
-import type { AuthItemProps } from './data';
+import type { AuthItemProps, BindRoleProps, PageParams } from './data';
 import { addItem, queryList, removeItem, updateItem } from './service';
 
 const TableList: React.FC = () => {
@@ -39,8 +39,8 @@ const TableList: React.FC = () => {
 
   const columns: ProColumns<AuthItemProps>[] = [
     {
-      title: '权限名称',
-      dataIndex: 'authName',
+      title: '驾校名称',
+      dataIndex: 'placeName',
       hideInSearch: true,
       render: (dom, entity) => {
         return (
@@ -56,17 +56,26 @@ const TableList: React.FC = () => {
       },
     },
     {
-      title: '权限编码',
-      dataIndex: 'authCode',
+      title: '管理员姓名',
+      dataIndex: 'adminName',
+      hideInSearch: true,
     },
     {
-      title: '角色描述',
+      title: '管理员手机号',
       hideInForm: true,
-      dataIndex: 'desc',
+      dataIndex: 'adminPhone',
     },
     {
       title: '创建时间',
       dataIndex: 'createdAt',
+      hideInForm: true,
+      sorter: true,
+      hideInSearch: true,
+      valueType: 'dateTime',
+    },
+    {
+      title: '过期时间',
+      dataIndex: 'perioOfValidity',
       hideInForm: true,
       sorter: true,
       hideInSearch: true,
@@ -128,7 +137,7 @@ const TableList: React.FC = () => {
 
   return (
     <PageContainer>
-      <ProTable<AuthItemProps, API.PageParams>
+      <ProTable<AuthItemProps, PageParams>
         headerTitle={'查询表格'}
         actionRef={actionRef}
         rowKey="id"
@@ -170,7 +179,7 @@ const TableList: React.FC = () => {
         {currentRow?.id && (
           <ProDescriptions<AuthItemProps>
             column={2}
-            title={currentRow?.authName}
+            title={currentRow?.placeName}
             request={async () => ({
               data: currentRow || {},
             })}

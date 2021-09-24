@@ -1,5 +1,5 @@
 import { request } from 'umi';
-import type { RoleItemProps } from './data.d';
+import type { RoleItemProps, SelectProps } from './data.d';
 
 type ParamsType = {
   current?: number;

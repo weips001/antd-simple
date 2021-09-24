@@ -1,5 +1,5 @@
 export type AuthItemProps = {
-  id: string;
+  id?: string;
   authCode: string;
   authFlag: string;
   authName: string;

@@ -16,7 +16,6 @@ import ProForm, {
 import { Link, history, useModel } from 'umi';
 import Footer from '@/components/Footer';
 import { login } from './service';
-import { getFakeCaptcha } from '@/services/ant-design-pro/login';
 import { LoginParams } from './data';
 import styles from './index.less';
 
@@ -55,7 +54,11 @@ const Login: React.FC = () => {
       if (res.success) {
         const { token, placeId } = res.data;
         localStorage.setItem('token', token);
-        localStorage.setItem('placeId', placeId);
+        if (placeId) {
+          localStorage.setItem('placeId', placeId);
+        } else {
+          localStorage.removeItem('placeId');
+        }
         const defaultLoginSuccessMessage = '登录成功！';
         message.success(defaultLoginSuccessMessage);
         await fetchUserInfo();
@@ -111,7 +114,7 @@ const Login: React.FC = () => {
               },
             }}
             onFinish={async (values) => {
-              await handleSubmit(values as API.LoginParams);
+              await handleSubmit(values as LoginParams);
             }}
           >
             <ProFormText

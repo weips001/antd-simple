@@ -1,10 +1,13 @@
-export type RoleItemProps = {
+export type AuthItemProps = {
   id?: string;
+  adminName: string;
+  adminPhone: string;
   createdAt: Date;
   desc: string;
-  placeId: string;
-  roleCode: string;
-  roleName: string;
+  isDelay: boolean;
+  perioOfValidity: Date;
+  placeLoaction: string;
+  placeName: string;
   updatedAt: Date;
 };
 

@@ -15,9 +15,9 @@ import {
   queryList,
   removeItem,
   updateItem,
-  getAllScanRole,
-  queryClientSystemRole,
-  assignClientSystemRole,
+  getAllRole,
+  getRoleIdsByUser,
+  bindRole,
 } from './service';
 
 const userStatusList = {
@@ -44,14 +44,11 @@ const TableList: React.FC = () => {
    * @en-US International configuration
    * @zh-CN 国际化配置
    * */
-  const { loading: bindLoading, run: bindSysRole } = useRequest(
-    assignClientSystemRole,
-    {
-      manual: true,
-    },
-  );
+  const { loading: bindLoading, run: bindSysRole } = useRequest(bindRole, {
+    manual: true,
+  });
   const { loading: detailLoading, run: getCurrentRole } = useRequest(
-    queryClientSystemRole,
+    getRoleIdsByUser,
     {
       manual: true,
       onSuccess(roleIds) {
@@ -59,7 +56,7 @@ const TableList: React.FC = () => {
       },
     },
   );
-  const { data: allRoleList } = useRequest(getAllScanRole);
+  const { data: allRoleList } = useRequest(getAllRole);
 
   const handleDone = () => {
     setDone(false);
@@ -247,7 +244,7 @@ const TableList: React.FC = () => {
         {currentRow?.id && (
           <ProDescriptions<RoleItemProps>
             column={2}
-            title={currentRow?.roleName}
+            title={currentRow?.name}
             request={async () => ({
               data: currentRow || {},
             })}
